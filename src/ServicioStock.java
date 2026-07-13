@@ -4,35 +4,35 @@ import java.util.Map;
 // Clase encargada de controlar el stock de productos
 public class ServicioStock {
 
-    // Mapa que almacena los productos por nombre
     private Map<String, Producto> productos = new HashMap<>();
+    private MetricasSistema metricas;
 
-    // Constructor: carga productos iniciales al sistema
-    public ServicioStock() {
-        productos.put("Empanada", new Producto("Empanada", 2));
-        productos.put("Jugo", new Producto("Jugo", 1));
-        productos.put("Pan con pollo", new Producto("Pan con pollo", 1));
+    public ServicioStock(MetricasSistema metricas) {
+        this.metricas = metricas;
+
+        productos.put("Empanada", new Producto("Empanada", 10));
+        productos.put("Jugo", new Producto("Jugo", 8));
+        productos.put("Pan con pollo", new Producto("Pan con pollo", 6));
+
+        metricas.registrarStockInicial("Empanada", 10);
+        metricas.registrarStockInicial("Jugo", 8);
+        metricas.registrarStockInicial("Pan con pollo", 6);
     }
 
-    // Método sincronizado para evitar que dos hilos descuenten stock al mismo tiempo
     public synchronized boolean descontarStock(String nombreProducto) {
 
-        // Busca el producto solicitado en el mapa
         Producto producto = productos.get(nombreProducto);
 
-        // Si el producto no existe, no se puede procesar
         if (producto == null) {
             System.out.println("Producto no encontrado: " + nombreProducto);
             return false;
         }
 
-        // Verifica si todavía existe stock disponible
         if (producto.getStock() > 0) {
-
-            // Descuenta una unidad del producto
             producto.descontarUno();
 
-            // Muestra el stock restante después del descuento
+            metricas.actualizarStock(nombreProducto, producto.getStock());
+
             System.out.println("Stock descontado: "
                     + nombreProducto
                     + " | Stock restante: "
@@ -41,8 +41,25 @@ public class ServicioStock {
             return true;
         }
 
-        // Si no hay stock, el pedido no debe procesarse
         System.out.println("Sin stock disponible para: " + nombreProducto);
         return false;
     }
+
+    public synchronized void reponerStock(String nombreProducto, int cantidad) {
+
+        Producto producto = productos.get(nombreProducto);
+
+        if (producto != null) {
+            producto.aumentarStock(cantidad);
+            metricas.actualizarStock(nombreProducto, producto.getStock());
+
+            System.out.println("Reposición de stock: "
+                    + nombreProducto
+                    + " +"
+                    + cantidad
+                    + " | Stock actual: "
+                    + producto.getStock());
+        }
+    }
 }
+
